@@ -4,6 +4,8 @@
   "use strict";
 
   const STORAGE_KEY = "gloomhelper.state.v1";
+  const SAVE_FORMAT = "gloomhelper.save.v1";
+  const APP_VERSION = "0.2.0";
 
   const defaultState = () => ({
     party: { name: "", reputation: 0, location: "", prosperity: 1, achievements: [], scenarios: [] },
@@ -11,6 +13,7 @@
     decks: {}, // keyed by character id, holds { deck: [], discard: [], blesses: 0, curses: 0, reshuffleNext: false }
     elements: { Fire: "inert", Ice: "inert", Air: "inert", Earth: "inert", Light: "inert", Dark: "inert" },
     activeModTarget: null,
+    savedAt: null,
   });
 
   let state = loadState();
@@ -27,7 +30,98 @@
   }
 
   function saveState() {
+    state.savedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    updateSaveStamp();
+  }
+
+  // ---- Export / import data shape ----------------------------------------
+  function buildExportPayload() {
+    return {
+      format: SAVE_FORMAT,
+      appVersion: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      state: state,
+    };
+  }
+
+  function exportJSONString() {
+    return JSON.stringify(buildExportPayload(), null, 2);
+  }
+
+  // Accept either a wrapped payload (from buildExportPayload) or a raw state object
+  // (older exports / hand-written). Returns { ok, state, message }.
+  function parseImportedJSON(raw) {
+    let obj;
+    try {
+      obj = JSON.parse(raw);
+    } catch (e) {
+      return { ok: false, message: "Not valid JSON: " + e.message };
+    }
+    if (!obj || typeof obj !== "object") {
+      return { ok: false, message: "Not a Gloomhelper save (expected an object)." };
+    }
+
+    let candidate;
+    if (obj.format === SAVE_FORMAT && obj.state && typeof obj.state === "object") {
+      candidate = obj.state;
+    } else if (obj.party && obj.characters !== undefined) {
+      // looks like a raw state (older format or direct localStorage dump)
+      candidate = obj;
+    } else {
+      return { ok: false, message: "Unrecognized save format. Expected a Gloomhelper export." };
+    }
+
+    if (!candidate.party || !Array.isArray(candidate.characters)) {
+      return { ok: false, message: "Save is missing 'party' or 'characters'." };
+    }
+
+    return { ok: true, state: Object.assign(defaultState(), candidate) };
+  }
+
+  function applyImport(importedState, mode) {
+    if (mode === "merge") {
+      state = mergeState(state, importedState);
+    } else {
+      state = importedState;
+    }
+    saveState();
+    renderAll();
+  }
+
+  // Merge: keep existing values, add anything not already present.
+  // Characters are merged by id (new ids appended); achievements/scenarios are
+  // appended without duplicates; decks are kept for whichever side has them.
+  function mergeState(cur, inc) {
+    const out = Object.assign({}, cur);
+    out.party = Object.assign({}, inc.party || {}, cur.party || {});
+    const ach = new Set([...(cur.party?.achievements || []), ...(inc.party?.achievements || [])]);
+    out.party.achievements = [...ach];
+    const scnSeen = new Set();
+    out.party.scenarios = [...(cur.party?.scenarios || []), ...(inc.party?.scenarios || [])]
+      .filter((s) => {
+        const k = s.num + ":" + s.result;
+        if (scnSeen.has(k)) return false;
+        scnSeen.add(k);
+        return true;
+      });
+
+    const byId = new Map((cur.characters || []).map((c) => [c.id, c]));
+    (inc.characters || []).forEach((c) => { if (!byId.has(c.id)) byId.set(c.id, c); });
+    out.characters = [...byId.values()];
+
+    out.decks = Object.assign({}, inc.decks || {}, cur.decks || {});
+    out.elements = Object.assign({}, inc.elements || {}, cur.elements || {});
+    out.activeModTarget = cur.activeModTarget || inc.activeModTarget || null;
+    return out;
+  }
+
+  function updateSaveStamp() {
+    const el = document.getElementById("save-stamp");
+    if (!el) return;
+    if (!state.savedAt) { el.textContent = ""; return; }
+    const d = new Date(state.savedAt);
+    el.textContent = "Saved " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
   // ---------- Tab switching ----------
@@ -553,39 +647,142 @@
     document.getElementById("history-content").innerHTML = window.GH_HISTORY;
   }
 
-  // ---------- Settings ----------
-  document.getElementById("export-btn").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  // ---------- Settings: export ----------
+  function downloadExport() {
+    const json = exportJSONString();
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "gloomhelper-save-" + new Date().toISOString().slice(0, 10) + ".json";
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const partyName = (state.party.name || "party").replace(/[^a-z0-9_-]+/gi, "_").slice(0, 24);
+    a.download = "gloomhelper-" + partyName + "-" + stamp + ".json";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
+    toast("Save exported (" + (json.length / 1024).toFixed(1) + " KB)");
+  }
+
+  document.getElementById("export-btn").addEventListener("click", downloadExport);
+  document.getElementById("quick-export").addEventListener("click", downloadExport);
+
+  document.getElementById("export-copy-btn").addEventListener("click", async () => {
+    const json = exportJSONString();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(json);
+        toast("Copied JSON to clipboard");
+      } else {
+        // fallback: show in textbox
+        showExportInBox(json);
+        toast("Clipboard unavailable — JSON shown below", "err");
+      }
+    } catch (e) {
+      showExportInBox(json);
+      toast("Copy failed — JSON shown below", "err");
+    }
   });
-  document.getElementById("import-file").addEventListener("change", (e) => {
-    const f = e.target.files[0];
+
+  document.getElementById("export-show-btn").addEventListener("click", () => {
+    showExportInBox(exportJSONString());
+  });
+  function showExportInBox(json) {
+    const box = document.getElementById("export-output");
+    box.value = json;
+    box.hidden = false;
+    box.focus();
+    box.select();
+  }
+
+  // ---------- Settings: import ----------
+  function getImportMode() {
+    const r = document.querySelector("input[name='import-mode']:checked");
+    return r ? r.value : "replace";
+  }
+
+  function showImportStatus(msg, kind) {
+    const el = document.getElementById("import-status");
+    el.textContent = msg;
+    el.className = "status-line " + (kind || "info");
+    el.hidden = false;
+  }
+
+  function describeIncoming(s) {
+    return (s.characters?.length || 0) + " character(s), " +
+           (s.party?.scenarios?.length || 0) + " scenario(s), " +
+           (s.party?.achievements?.length || 0) + " achievement(s)";
+  }
+
+  function importFromText(raw, source) {
+    const res = parseImportedJSON(raw);
+    if (!res.ok) {
+      showImportStatus("Import failed: " + res.message, "err");
+      toast("Import failed", "err");
+      return;
+    }
+    const mode = getImportMode();
+    const summary = describeIncoming(res.state);
+    const actionWord = mode === "merge" ? "Merge" : "Replace your save";
+    if (!confirm(actionWord + " with this import?\n\nIncoming: " + summary)) {
+      showImportStatus("Import cancelled.", "info");
+      return;
+    }
+    applyImport(res.state, mode);
+    showImportStatus("Imported successfully (" + mode + ") from " + source + ". " + summary, "ok");
+    toast("Save imported");
+  }
+
+  function readImportFile(f) {
     if (!f) return;
     const r = new FileReader();
-    r.onload = () => {
-      try {
-        const obj = JSON.parse(r.result);
-        state = Object.assign(defaultState(), obj);
-        saveState();
-        renderAll();
-        alert("Imported successfully.");
-      } catch (err) {
-        alert("Could not import: " + err.message);
-      }
-    };
+    r.onload = () => importFromText(r.result, f.name);
+    r.onerror = () => { showImportStatus("Could not read file.", "err"); };
     r.readAsText(f);
+  }
+
+  document.getElementById("import-file").addEventListener("change", (e) => {
+    readImportFile(e.target.files[0]);
+    e.target.value = ""; // allow re-importing the same file
   });
+  document.getElementById("quick-import-file").addEventListener("change", (e) => {
+    readImportFile(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  document.getElementById("import-paste-btn").addEventListener("click", () => {
+    document.getElementById("import-input").hidden = false;
+    document.getElementById("import-paste-actions").hidden = false;
+    document.getElementById("import-input").focus();
+  });
+  document.getElementById("import-cancel-btn").addEventListener("click", () => {
+    document.getElementById("import-input").hidden = true;
+    document.getElementById("import-paste-actions").hidden = true;
+    document.getElementById("import-input").value = "";
+  });
+  document.getElementById("import-apply-btn").addEventListener("click", () => {
+    const raw = document.getElementById("import-input").value.trim();
+    if (!raw) { showImportStatus("Paste some JSON first.", "err"); return; }
+    importFromText(raw, "pasted JSON");
+  });
+
   document.getElementById("reset-btn").addEventListener("click", () => {
-    if (!confirm("This will erase all party and character data. Continue?")) return;
+    if (!confirm("This will erase all party and character data. Export first if you want a backup.\n\nReally reset?")) return;
     localStorage.removeItem(STORAGE_KEY);
     state = defaultState();
     renderAll();
+    toast("All data reset");
   });
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function toast(msg, kind) {
+    const el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "toast" + (kind === "err" ? " err" : "");
+    el.hidden = false;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 2400);
+  }
 
   // ---------- Helpers ----------
   function escape(s) {
@@ -617,6 +814,7 @@
     renderElements();
     renderRules("");
     renderHistory();
+    updateSaveStamp();
   }
 
   renderAll();

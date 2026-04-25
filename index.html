@@ -11,6 +11,13 @@
   <div class="brand">
     <h1>Gloomhelper</h1>
     <span class="tag">Gloomhaven Companion</span>
+    <div class="brand-actions">
+      <button id="quick-export" title="Export save data to a JSON file">⬇ Export</button>
+      <label class="btn" title="Import a Gloomhelper JSON save file">⬆ Import
+        <input id="quick-import-file" type="file" accept="application/json,.json" hidden />
+      </label>
+      <span id="save-stamp" class="save-stamp"></span>
+    </div>
   </div>
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="party">Party</button>
@@ -208,24 +215,55 @@
   <section id="settings" class="tab-panel">
     <div class="panel-header"><h2>Settings</h2></div>
     <div class="grid">
-      <div class="card">
-        <h3>Save Data</h3>
-        <p>All data is stored locally in your browser. Use these tools to back up or move it.</p>
+      <div class="card span-2">
+        <h3>Export Save Data</h3>
+        <p>All party, character, deck, scenario and element data is stored locally in your browser. Export a JSON snapshot to back it up, share it, or move it to another browser/device.</p>
         <div class="row">
-          <button id="export-btn">Export JSON</button>
-          <label class="btn">Import JSON
-            <input id="import-file" type="file" accept="application/json" hidden />
+          <button id="export-btn" class="primary">⬇ Download JSON file</button>
+          <button id="export-copy-btn">Copy JSON to clipboard</button>
+          <button id="export-show-btn">Show JSON in textbox</button>
+        </div>
+        <textarea id="export-output" class="json-box" rows="6" placeholder="Exported JSON will appear here when you click 'Show JSON in textbox'." readonly hidden></textarea>
+      </div>
+
+      <div class="card span-2">
+        <h3>Import Save Data</h3>
+        <p>Load a previously exported Gloomhelper save. Choose how to merge it with the current state:</p>
+        <div class="row">
+          <label class="radio"><input type="radio" name="import-mode" value="replace" checked /> Replace everything</label>
+          <label class="radio"><input type="radio" name="import-mode" value="merge" /> Merge (keep my data, add anything new)</label>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <label class="btn">Choose JSON file…
+            <input id="import-file" type="file" accept="application/json,.json" hidden />
           </label>
-          <button id="reset-btn" class="danger">Reset All</button>
+          <button id="import-paste-btn">Paste JSON below…</button>
+        </div>
+        <textarea id="import-input" class="json-box" rows="6" placeholder='Paste a Gloomhelper JSON save here, then press "Apply pasted JSON".' hidden></textarea>
+        <div class="row" id="import-paste-actions" hidden>
+          <button id="import-apply-btn" class="primary">Apply pasted JSON</button>
+          <button id="import-cancel-btn">Cancel</button>
+        </div>
+        <p id="import-status" class="status-line" hidden></p>
+      </div>
+
+      <div class="card">
+        <h3>Reset</h3>
+        <p>Permanently erase the local save. <strong>Export first if you want a backup.</strong></p>
+        <div class="row">
+          <button id="reset-btn" class="danger">Reset All Data</button>
         </div>
       </div>
+
       <div class="card">
         <h3>About</h3>
         <p>Gloomhelper is an unofficial fan-made companion for the board game <strong>Gloomhaven</strong> by Cephalofair Games. Game content, names, and mechanics are referenced under fair use for player assistance.</p>
-        <p class="hint">Version 0.1.0</p>
+        <p class="hint">Version 0.2.0 — save format <code>gloomhelper.save.v1</code></p>
       </div>
     </div>
   </section>
+
+  <div id="toast" class="toast" hidden></div>
 </main>
 
 <script src="data/characters.js"></script>
