@@ -627,6 +627,80 @@
     });
   }
 
+  // ---------- Bestiary ----------
+  function renderBestiary() {
+    const root = document.getElementById("bestiary-list");
+    if (!root) return;
+    const filter = (document.getElementById("bestiary-search").value || "").toLowerCase();
+    const lvl = parseInt(document.getElementById("bestiary-level").value, 10) || 0;
+    root.innerHTML = "";
+    (window.GH_MONSTERS || []).forEach((m) => {
+      const haystack = (m.name + " " + (m.category || "") + " " + (m.notes || "")).toLowerCase();
+      if (filter && !haystack.includes(filter)) return;
+      const n = m.normal && m.normal[lvl];
+      const e = m.elite && m.elite[lvl];
+      const card = document.createElement("div");
+      card.className = "monster-card";
+      let rows = "";
+      if (n) {
+        rows += `<tr><th>Normal</th><td>${n[0]}</td><td>${n[1]}</td><td>${n[2]}</td><td>${n[3] || "—"}</td><td class="extras">${escape(n[4] || "")}</td></tr>`;
+      }
+      if (e) {
+        rows += `<tr class="elite-row"><th>Elite</th><td>${e[0]}</td><td>${e[1]}</td><td>${e[2]}</td><td>${e[3] || "—"}</td><td class="extras">${escape(e[4] || "")}</td></tr>`;
+      }
+      card.innerHTML = `<h3>${escape(m.name)}</h3>
+        <div class="cat">${escape(m.category || "")} • Level ${lvl}</div>
+        <table>
+          <thead><tr><th></th><th>HP</th><th>Move</th><th>Atk</th><th>Range</th><th>Extras</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="6" class="extras">No stats at this level.</td></tr>`}</tbody>
+        </table>
+        ${m.notes ? `<div class="notes">${escape(m.notes)}</div>` : ""}`;
+      root.appendChild(card);
+    });
+    if (!root.children.length) {
+      root.innerHTML = `<p class="hint">No monsters match.</p>`;
+    }
+  }
+  document.getElementById("bestiary-search")?.addEventListener("input", renderBestiary);
+  document.getElementById("bestiary-level")?.addEventListener("change", renderBestiary);
+
+  // ---------- Items ----------
+  function renderItemsTab() {
+    const root = document.getElementById("items-list");
+    if (!root) return;
+    const filter = (document.getElementById("items-search").value || "").toLowerCase();
+    const slot = document.getElementById("items-slot").value;
+    const prosp = parseInt(document.getElementById("items-prosperity").value, 10);
+    root.innerHTML = "";
+    (window.GH_ITEMS || []).forEach((it) => {
+      const haystack = (it.name + " " + it.effect + " " + it.slot).toLowerCase();
+      if (filter && !haystack.includes(filter)) return;
+      if (slot && it.slot !== slot) return;
+      if (prosp && it.prosperity > prosp) return;
+      const card = document.createElement("div");
+      card.className = "item-card";
+      card.innerHTML = `
+        <div class="item-head">
+          <span class="iname">${escape(it.name)}</span>
+          <span class="iid">#${escape(it.id)}</span>
+        </div>
+        <div class="meta">
+          <span class="pip">${escape(it.slot)}</span>
+          <span class="pip">${it.cost}g</span>
+          <span class="pip">Pros. ${it.prosperity}</span>
+          <span class="pip">${escape(it.use)}</span>
+        </div>
+        <div class="ieffect">${escape(it.effect)}</div>`;
+      root.appendChild(card);
+    });
+    if (!root.children.length) {
+      root.innerHTML = `<p class="hint">No items match.</p>`;
+    }
+  }
+  document.getElementById("items-search")?.addEventListener("input", renderItemsTab);
+  document.getElementById("items-slot")?.addEventListener("change", renderItemsTab);
+  document.getElementById("items-prosperity")?.addEventListener("change", renderItemsTab);
+
   // ---------- Rules ----------
   function renderRules(filter) {
     const root = document.getElementById("rules-list");
@@ -814,8 +888,81 @@
     renderElements();
     renderRules("");
     renderHistory();
+    renderBestiary();
+    renderItemsTab();
     updateSaveStamp();
   }
+
+  // ---------- PWA: service worker + install prompt ----------
+  function setOfflineBadge(text, kind) {
+    const el = document.getElementById("offline-badge");
+    if (!el) return;
+    el.textContent = text;
+    el.dataset.kind = kind || "";
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) {
+      setOfflineBadge("⚠ no offline support");
+      return;
+    }
+    if (location.protocol === "file:") {
+      // Service workers are not allowed on file://; fall back gracefully.
+      setOfflineBadge("⚠ open via http:// for offline");
+      return;
+    }
+    navigator.serviceWorker.register("./service-worker.js")
+      .then((reg) => {
+        if (reg.active && !navigator.serviceWorker.controller) {
+          setOfflineBadge("✓ offline ready (reload)");
+        } else {
+          setOfflineBadge("✓ offline ready");
+        }
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) {
+              toast("Update available — reload to apply");
+            }
+          });
+        });
+      })
+      .catch((err) => {
+        console.warn("SW registration failed:", err);
+        setOfflineBadge("⚠ offline unavailable");
+      });
+  }
+
+  function setupInstallPrompt() {
+    let deferred = null;
+    const btn = document.getElementById("quick-install");
+    if (!btn) return;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false;
+    });
+    btn.addEventListener("click", async () => {
+      if (!deferred) return;
+      btn.disabled = true;
+      deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      if (outcome === "accepted") {
+        toast("Gloomhelper installed");
+      }
+      deferred = null;
+      btn.hidden = true;
+      btn.disabled = false;
+    });
+    window.addEventListener("appinstalled", () => {
+      btn.hidden = true;
+      toast("Installed — launch from your home screen / apps");
+    });
+  }
+
+  registerServiceWorker();
+  setupInstallPrompt();
 
   renderAll();
 })();

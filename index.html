@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Gloomhelper — Gloomhaven Companion</title>
+<meta name="description" content="Offline companion for the board game Gloomhaven: track party, characters, attack modifiers, conditions, elements, and rules." />
+<meta name="theme-color" content="#0f1419" />
+<meta name="color-scheme" content="dark" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+<link rel="apple-touch-icon" href="icons/icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Gloomhelper" />
+<meta name="mobile-web-app-capable" content="yes" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,10 +22,12 @@
     <h1>Gloomhelper</h1>
     <span class="tag">Gloomhaven Companion</span>
     <div class="brand-actions">
+      <button id="quick-install" class="primary" hidden title="Install Gloomhelper as an app on this device">⤓ Install</button>
       <button id="quick-export" title="Export save data to a JSON file">⬇ Export</button>
       <label class="btn" title="Import a Gloomhelper JSON save file">⬆ Import
         <input id="quick-import-file" type="file" accept="application/json,.json" hidden />
       </label>
+      <span id="offline-badge" class="save-stamp" title="Service worker status">⏳ Loading…</span>
       <span id="save-stamp" class="save-stamp"></span>
     </div>
   </div>
@@ -23,6 +35,8 @@
     <button class="tab active" data-tab="party">Party</button>
     <button class="tab" data-tab="characters">Characters</button>
     <button class="tab" data-tab="modifiers">Modifier Deck</button>
+    <button class="tab" data-tab="bestiary">Bestiary</button>
+    <button class="tab" data-tab="items">Items</button>
     <button class="tab" data-tab="conditions">Conditions</button>
     <button class="tab" data-tab="elements">Elements</button>
     <button class="tab" data-tab="rules">Rules</button>
@@ -183,6 +197,51 @@
     </div>
   </section>
 
+  <!-- BESTIARY TAB -->
+  <section id="bestiary" class="tab-panel">
+    <div class="panel-header">
+      <h2>Bestiary</h2>
+      <div class="panel-actions">
+        <input id="bestiary-search" type="text" placeholder="Search monsters..." />
+        <select id="bestiary-level">
+          <option value="0">Level 0</option>
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3" selected>Level 3</option>
+          <option value="4">Level 4</option>
+          <option value="5">Level 5</option>
+          <option value="6">Level 6</option>
+          <option value="7">Level 7</option>
+        </select>
+      </div>
+    </div>
+    <div id="bestiary-list" class="bestiary-list"></div>
+  </section>
+
+  <!-- ITEMS TAB -->
+  <section id="items" class="tab-panel">
+    <div class="panel-header">
+      <h2>Items</h2>
+      <div class="panel-actions">
+        <input id="items-search" type="text" placeholder="Search items..." />
+        <select id="items-slot">
+          <option value="">— any slot —</option>
+          <option>Head</option><option>Body</option><option>Legs</option>
+          <option>One Hand</option><option>Two Hands</option><option>Small</option><option>Chest</option>
+        </select>
+        <select id="items-prosperity">
+          <option value="">— any prosperity —</option>
+          <option value="1">Up to 1</option><option value="2">Up to 2</option>
+          <option value="3">Up to 3</option><option value="4">Up to 4</option>
+          <option value="5">Up to 5</option><option value="6">Up to 6</option>
+          <option value="7">Up to 7</option><option value="8">Up to 8</option>
+          <option value="9">Up to 9</option>
+        </select>
+      </div>
+    </div>
+    <div id="items-list" class="items-grid"></div>
+  </section>
+
   <!-- CONDITIONS TAB -->
   <section id="conditions" class="tab-panel">
     <div class="panel-header"><h2>Conditions & Effects</h2></div>
@@ -270,6 +329,8 @@
 <script src="data/conditions.js"></script>
 <script src="data/elements.js"></script>
 <script src="data/modifiers.js"></script>
+<script src="data/monsters.js"></script>
+<script src="data/items.js"></script>
 <script src="data/rules.js"></script>
 <script src="data/history.js"></script>
 <script src="app.js"></script>

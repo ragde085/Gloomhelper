@@ -1,0 +1,27 @@
+{
+  "name": "Gloomhelper — Gloomhaven Companion",
+  "short_name": "Gloomhelper",
+  "description": "An offline-capable companion for the board game Gloomhaven: track party, characters, attack modifiers, conditions, elements, and rules.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1419",
+  "theme_color": "#c8a25b",
+  "lang": "en",
+  "categories": ["games", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

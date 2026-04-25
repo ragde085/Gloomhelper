@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#1c2530"/>
+      <stop offset="100%" stop-color="#0a0d12"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e7c47a"/>
+      <stop offset="100%" stop-color="#a0793f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- decorative ring -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#2c3a4a" stroke-width="6"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#c8a25b" stroke-width="3" stroke-dasharray="4 8" opacity="0.55"/>
+  <!-- stylized "G" rune -->
+  <g transform="translate(256 256)">
+    <path d="
+      M 0 -110
+      A 110 110 0 1 0 95 60
+      L 95 0
+      L 5 0
+      L 5 32
+      L 55 32
+      A 80 80 0 1 1 22 -78
+      Z"
+      fill="url(#gold)"
+      stroke="#5a3f1b"
+      stroke-width="3"
+      stroke-linejoin="round"/>
+    <!-- inner gem -->
+    <circle cx="0" cy="0" r="14" fill="#e7c47a" stroke="#5a3f1b" stroke-width="2"/>
+    <circle cx="-4" cy="-4" r="4" fill="#fff7df" opacity="0.7"/>
+  </g>
+  <!-- subtle wordmark -->
+  <text x="256" y="448"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="44"
+        fill="#c8a25b"
+        letter-spacing="4">GLOOMHELPER</text>
+</svg>
