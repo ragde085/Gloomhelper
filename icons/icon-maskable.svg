@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1c2530"/>
+      <stop offset="100%" stop-color="#0a0d12"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e7c47a"/>
+      <stop offset="100%" stop-color="#a0793f"/>
+    </linearGradient>
+  </defs>
+  <!-- full-bleed safe area: keep content within central 80% -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256)">
+    <path d="
+      M 0 -90
+      A 90 90 0 1 0 78 50
+      L 78 0
+      L 4 0
+      L 4 26
+      L 45 26
+      A 65 65 0 1 1 18 -64
+      Z"
+      fill="url(#gold)"
+      stroke="#5a3f1b"
+      stroke-width="3"
+      stroke-linejoin="round"/>
+    <circle cx="0" cy="0" r="11" fill="#e7c47a" stroke="#5a3f1b" stroke-width="2"/>
+  </g>
+</svg>
