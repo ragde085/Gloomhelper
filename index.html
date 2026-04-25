@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gloomhelper — Gloomhaven Companion</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>Gloomhelper</h1>
+    <span class="tag">Gloomhaven Companion</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="party">Party</button>
+    <button class="tab" data-tab="characters">Characters</button>
+    <button class="tab" data-tab="modifiers">Modifier Deck</button>
+    <button class="tab" data-tab="conditions">Conditions</button>
+    <button class="tab" data-tab="elements">Elements</button>
+    <button class="tab" data-tab="rules">Rules</button>
+    <button class="tab" data-tab="history">History</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+</header>
+
+<main>
+  <!-- PARTY TAB -->
+  <section id="party" class="tab-panel active">
+    <div class="panel-header">
+      <h2>Party</h2>
+      <div class="panel-actions">
+        <input id="party-name" type="text" placeholder="Party name" />
+        <input id="party-rep" type="number" placeholder="Reputation" min="-20" max="20" />
+        <input id="party-loc" type="text" placeholder="Current location" />
+        <button id="party-save" class="primary">Save Party</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Members</h3>
+        <ul id="party-members" class="members"></ul>
+        <p class="hint">Add members in the <strong>Characters</strong> tab.</p>
+      </div>
+      <div class="card">
+        <h3>Achievements</h3>
+        <div class="row">
+          <input id="achv-input" type="text" placeholder="Add achievement..." />
+          <button id="achv-add">Add</button>
+        </div>
+        <ul id="achv-list" class="taglist"></ul>
+      </div>
+      <div class="card">
+        <h3>Prosperity</h3>
+        <div class="row">
+          <button id="pros-dec">-</button>
+          <span id="pros-val" class="big">1</span>
+          <button id="pros-inc">+</button>
+        </div>
+        <p class="hint">Town prosperity unlocks new items and starting perks.</p>
+      </div>
+      <div class="card">
+        <h3>Scenario Tracker</h3>
+        <div class="row">
+          <input id="scn-num" type="number" placeholder="#" min="1" max="115" style="max-width:80px" />
+          <select id="scn-result">
+            <option value="">— result —</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+          </select>
+          <button id="scn-add">Log</button>
+        </div>
+        <ul id="scn-list" class="scn-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHARACTERS TAB -->
+  <section id="characters" class="tab-panel">
+    <div class="panel-header">
+      <h2>Characters</h2>
+      <div class="panel-actions">
+        <select id="char-class-pick"></select>
+        <input id="char-name" type="text" placeholder="Character name" />
+        <button id="char-add" class="primary">Add Character</button>
+      </div>
+    </div>
+    <div id="char-list" class="char-list"></div>
+    <template id="char-card-tpl">
+      <article class="char-card" data-id="">
+        <header class="char-head">
+          <div class="char-titles">
+            <h3 class="cname"></h3>
+            <span class="cclass"></span>
+          </div>
+          <button class="danger char-del">Remove</button>
+        </header>
+        <div class="char-body">
+          <div class="stat-grid">
+            <label>Level <input class="lvl" type="number" min="1" max="9" value="1"/></label>
+            <label>XP <input class="xp" type="number" min="0" value="0"/></label>
+            <label>Gold <input class="gold" type="number" min="0" value="0"/></label>
+            <label>HP <input class="hp" type="number" min="0" value="10"/></label>
+            <label>Max HP <input class="maxhp" type="number" min="1" value="10"/></label>
+            <label>Checks <input class="checks" type="number" min="0" max="18" value="0"/></label>
+          </div>
+          <div class="subsection">
+            <h4>Perks</h4>
+            <ul class="perks"></ul>
+          </div>
+          <div class="subsection">
+            <h4>Items</h4>
+            <div class="row">
+              <input class="item-input" type="text" placeholder="Item name" />
+              <button class="item-add">Add</button>
+            </div>
+            <ul class="items taglist"></ul>
+          </div>
+          <div class="subsection">
+            <h4>Available Cards</h4>
+            <div class="cards-list"></div>
+            <p class="hint">Toggle cards to mark which are in your active deck for the next scenario.</p>
+          </div>
+          <div class="subsection">
+            <h4>Conditions</h4>
+            <div class="conds-row"></div>
+          </div>
+          <div class="subsection">
+            <h4>Notes</h4>
+            <textarea class="notes" rows="3" placeholder="Battle goals, party history, ..."></textarea>
+          </div>
+        </div>
+      </article>
+    </template>
+  </section>
+
+  <!-- MODIFIER DECK TAB -->
+  <section id="modifiers" class="tab-panel">
+    <div class="panel-header">
+      <h2>Attack Modifier Deck</h2>
+      <div class="panel-actions">
+        <select id="mod-target"></select>
+        <button id="mod-draw" class="primary">Draw</button>
+        <button id="mod-shuffle">Shuffle</button>
+        <button id="mod-reset">Reset Deck</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Last Draw</h3>
+        <div id="mod-current" class="mod-card big-card">—</div>
+        <p class="hint">Rolling modifiers (+0 with star) chain — keep drawing until you hit a non-rolling card.</p>
+        <div id="mod-rolling-trail" class="mod-trail"></div>
+      </div>
+      <div class="card">
+        <h3>Deck Status</h3>
+        <ul class="kv">
+          <li><span>Cards left in deck</span><strong id="mod-deck-count">0</strong></li>
+          <li><span>Cards in discard</span><strong id="mod-disc-count">0</strong></li>
+          <li><span>Reshuffle next?</span><strong id="mod-reshuffle">No</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Bless / Curse</h3>
+        <div class="row">
+          <button id="mod-bless">+ Bless</button>
+          <button id="mod-curse">+ Curse</button>
+          <button id="mod-clear-bc">Clear</button>
+        </div>
+        <p class="hint">Adds 1 Bless or Curse to the current target's deck (limit 10 of each per Gloomhaven rules; this app does not enforce caps).</p>
+      </div>
+      <div class="card span-2">
+        <h3>Discard Pile</h3>
+        <ul id="mod-discard" class="mod-discard"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONDITIONS TAB -->
+  <section id="conditions" class="tab-panel">
+    <div class="panel-header"><h2>Conditions & Effects</h2></div>
+    <div id="conditions-list" class="grid"></div>
+  </section>
+
+  <!-- ELEMENTS TAB -->
+  <section id="elements" class="tab-panel">
+    <div class="panel-header"><h2>Elemental Infusions</h2></div>
+    <div id="elements-board" class="elements-board"></div>
+    <p class="hint">Click an element to cycle <em>strong → waning → inert</em>. Strong infusions consumed for an effect become inert at the end of the round.</p>
+  </section>
+
+  <!-- RULES TAB -->
+  <section id="rules" class="tab-panel">
+    <div class="panel-header">
+      <h2>Quick Rules Reference</h2>
+      <input id="rules-search" type="text" placeholder="Search rules..." />
+    </div>
+    <div id="rules-list" class="rules-list"></div>
+  </section>
+
+  <!-- HISTORY TAB -->
+  <section id="history" class="tab-panel">
+    <div class="panel-header"><h2>History of Gloomhaven</h2></div>
+    <article id="history-content" class="prose"></article>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section id="settings" class="tab-panel">
+    <div class="panel-header"><h2>Settings</h2></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Save Data</h3>
+        <p>All data is stored locally in your browser. Use these tools to back up or move it.</p>
+        <div class="row">
+          <button id="export-btn">Export JSON</button>
+          <label class="btn">Import JSON
+            <input id="import-file" type="file" accept="application/json" hidden />
+          </label>
+          <button id="reset-btn" class="danger">Reset All</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>About</h3>
+        <p>Gloomhelper is an unofficial fan-made companion for the board game <strong>Gloomhaven</strong> by Cephalofair Games. Game content, names, and mechanics are referenced under fair use for player assistance.</p>
+        <p class="hint">Version 0.1.0</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="data/characters.js"></script>
+<script src="data/conditions.js"></script>
+<script src="data/elements.js"></script>
+<script src="data/modifiers.js"></script>
+<script src="data/rules.js"></script>
+<script src="data/history.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
